@@ -24,6 +24,7 @@ import json
 import argparse
 import logging
 from tqdm import tqdm
+from PIL import Image
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', filename='main.log', filemode='w')
 
@@ -78,38 +79,57 @@ def main(args):
         f.write(f'nc: {len(classes)}\n')
     logging.info('Classes written to yaml file')
     
-    # write annotations to txt files
+    # write annotations to txt files (the positions, and sizes are normalized)
     logging.info('Initializing writing annotations to txt files')
     logging.info(f'Unique keys of an annotation: {annotations["annotations"][0].keys()}')
     for annotation in tqdm(annotations['annotations']):
         image_id = annotation['image_id']
-        image_name = f'{image_id}.jpg'
-        image_path = os.path.join(images_folder, image_name)
+        image_name = f'{image_id}'
+        # the image name MUST have 12 characters, so it will be left padded with zeros
+        image_name = image_name.zfill(12) + '.jpg'
+        # path join with /
+        image_path = os.path.join(images_folder, image_name).replace('\\', '/')
         logging.info(f'Processing image {image_name}')
+        logging.info(f'Image path: {image_path}')
                 
         # write annotation (it can happen to have multiple annotations for the same image, so it will append to the file)
         annotation_path = os.path.join(annotations_output_path, f'{image_id}.txt')
         with open(annotation_path, 'a') as f:
             category_id = annotation['category_id']
-            category = categories[category_id]
+            # category = categories[category_id]
             bbox = annotation['bbox']
-            x_center = bbox[0] + bbox[2] / 2
-            y_center = bbox[1] + bbox[3] / 2
-            width = bbox[2]
-            height = bbox[3]
-            f.write(f'{category} {x_center} {y_center} {width} {height}\n')
+
+            # normalize the values
+            width, height = bbox[2], bbox[3]
+            x_center = bbox[0] + width / 2
+            y_center = bbox[1] + height / 2
+            
+            # get the image width from the image file
+            image_width, image_height = 0, 0
+            try:
+                image_width, image_height = annotation['width'], annotation['height']
+            except:
+                logging.info(f'Could not find image width and height for image {image_name} in the annotation file')
+                logging.info('Trying to get it from the image file')
+                try:
+                    image = Image.open(image_path)
+                    image_width, image_height = image.size
+                except:
+                    logging.error(f'Could not find image width and height for image {image_name}')
+                    logging.error(f'Skipping this image: {image_name}')
+                    continue
+                
+            x_center /= image_width
+            y_center /= image_height
+            width /= image_width
+            height /= image_height
+        
+            
+            f.write(f'{category_id} {x_center} {y_center} {width} {height}\n')
+            
             
     logging.info('Finished writing annotations to txt files')
     
-    # Copy images to output folder
-    logging.info('Copying images to output folder')
-    # check os
-    if sys.platform == 'win32':
-        os.system(f'copy {images_folder}/*.jpg {images_output_path}')
-    else:
-        os.system(f'cp {images_folder}/*.jpg {images_output_path}')
-        
-    logging.info('Images copied to output folder')
     
     logging.info('Finished')
     
