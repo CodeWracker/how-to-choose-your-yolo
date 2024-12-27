@@ -7,7 +7,6 @@ import argparse
 import logging
 from tqdm import tqdm
 
-
 # Configuração de logging
 logging.basicConfig(
     filename='main.log',
@@ -15,7 +14,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     filemode='w'
 )
-
 
 def analisar_dataset(caminho_dataset):
     caminho_dataset = caminho_dataset.replace('\\', '/')
@@ -40,24 +38,39 @@ def analisar_dataset(caminho_dataset):
     resultados = {}
     for split, caminho in caminhos.items():
         logging.info(f'Analisando split: {split}')
+        caminho_images = os.path.join(caminho, 'images')
         caminho_labels = os.path.join(caminho, 'labels')
 
         total_imagens = 0
         total_anotacoes = 0
+        imagens_sem_anotacao = 0
+        anotacoes_vazias = 0
         classes_contagem = Counter()
-        heatmap = np.zeros((1000, 1000))  # Grid de 1000x1000 para precisão do heatmap
+        heatmap = np.zeros((1000, 1000))
 
-        arquivos_labels = [
-            f for f in os.listdir(caminho_labels) if f.endswith('.txt')
+        arquivos_imagens = [
+            f for f in os.listdir(caminho_images) if f.endswith(('.jpg', '.png', '.jpeg'))
         ]
 
-        for nome_arquivo in tqdm(arquivos_labels, desc=f'Processando {split}', unit='arquivo'):
+        for nome_arquivo in tqdm(arquivos_imagens, desc=f'Processando {split}', unit='imagem'):
             total_imagens += 1
-            caminho_label = os.path.join(caminho_labels, nome_arquivo)
+            logging.info(f'Processando imagem: {nome_arquivo} e pegando a label {os.path.splitext(nome_arquivo)[0]}.txt')
+            caminho_label = os.path.join(caminho_labels, os.path.splitext(nome_arquivo)[0] + '.txt')
+
+            if not os.path.exists(caminho_label):
+                imagens_sem_anotacao += 1
+                logging.warning(f'Anotação ausente para a imagem: {nome_arquivo}')
+                continue
 
             try:
                 with open(caminho_label, 'r') as arquivo:
-                    for linha in arquivo:
+                    linhas = arquivo.readlines()
+                    if not linhas:
+                        anotacoes_vazias += 1
+                        logging.info(f'Anotação nula para a imagem: {nome_arquivo}')
+                        continue
+
+                    for linha in linhas:
                         total_anotacoes += 1
                         dados = linha.strip().split()
                         classe_id = int(dados[0])
@@ -69,7 +82,7 @@ def analisar_dataset(caminho_dataset):
                         box_largura = float(dados[3])
                         box_altura = float(dados[4])
 
-                        # Converte coordenadas para o heatmap
+                        # Heatmap
                         x_min = int((x_center - box_largura / 2) * 1000)
                         x_max = int((x_center + box_largura / 2) * 1000)
                         y_min = int((y_center - box_altura / 2) * 1000)
@@ -79,14 +92,20 @@ def analisar_dataset(caminho_dataset):
             except Exception as e:
                 logging.warning(f'Erro ao processar {nome_arquivo}: {e}')
 
+        # Métricas finais
         resultados[split] = {
             'total_imagens': total_imagens,
             'total_anotacoes': total_anotacoes,
-            'classes_contagem': dict(classes_contagem)
+            'imagens_sem_anotacao': imagens_sem_anotacao,
+            'anotacoes_vazias': anotacoes_vazias,
+            'classes_contagem': dict(classes_contagem),
         }
-        logging.info(f'Split {split}: {total_imagens} imagens, {total_anotacoes} anotações.')
 
-        # Criação da pasta health
+        logging.info(f'{split} - Total de imagens: {total_imagens}')
+        logging.info(f'{split} - Total de anotações: {total_anotacoes}')
+        logging.info(f'{split} - Imagens sem anotação: {imagens_sem_anotacao}')
+        logging.info(f'{split} - Anotações nulas: {anotacoes_vazias}')
+
         pasta_health = os.path.join(caminho_dataset, 'health')
         os.makedirs(pasta_health, exist_ok=True)
 
@@ -112,10 +131,9 @@ def analisar_dataset(caminho_dataset):
     resultados_yaml = os.path.join(pasta_health, 'resultados.yml')
     with open(resultados_yaml, 'w') as arquivo_resultados:
         yaml.dump(resultados, arquivo_resultados)
-    logging.info(f'Resultados gerais salvos em {resultados_yaml}')
 
-    print('✅ Análise concluída. Resultados salvos na pasta health.')
     logging.info('Análise concluída com sucesso.')
+    print('✅ Análise concluída. Resultados salvos na pasta health.')
 
 
 if __name__ == '__main__':
