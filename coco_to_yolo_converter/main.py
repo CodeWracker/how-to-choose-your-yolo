@@ -89,11 +89,11 @@ def main(args):
         image_name = image_name.zfill(12) + '.jpg'
         # path join with /
         image_path = os.path.join(images_folder, image_name).replace('\\', '/')
-        logging.info(f'Processing image {image_name}')
-        logging.info(f'Image path: {image_path}')
+        logging.debug(f'Processing image {image_name}')
+        logging.debug(f'Image path: {image_path}')
                 
         # write annotation (it can happen to have multiple annotations for the same image, so it will append to the file)
-        annotation_path = os.path.join(annotations_output_path, f'{image_id}.txt')
+        annotation_path = os.path.join(annotations_output_path, f'{str(image_id).zfill(12)}.txt')
         with open(annotation_path, 'a') as f:
             category_id = annotation['category_id']
             # category = categories[category_id]
@@ -109,12 +109,11 @@ def main(args):
             try:
                 image_width, image_height = annotation['width'], annotation['height']
             except:
-                logging.info(f'Could not find image width and height for image {image_name} in the annotation file')
-                logging.info('Trying to get it from the image file')
                 try:
                     image = Image.open(image_path)
                     image_width, image_height = image.size
                 except:
+                    logging.info(f'Could not find image width and height for image {image_name} in the annotation file')
                     logging.error(f'Could not find image width and height for image {image_name}')
                     logging.error(f'Skipping this image: {image_name}')
                     continue
