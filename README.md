@@ -62,7 +62,7 @@ This research aims to establish a **clear methodology for selecting the optimal 
   - **Spatial Distribution of Objects:** Objects concentrated in one area vs uniformly distributed across the image.
 
 ### 3. **Model Training and Evaluation**
-- Train YOLOv3, YOLOv5, YOLOv7, and YOLOv9 on each dataset variant.
+- Train YOLOv3, YOLOv5, YOLOv7, YOLOv9, and others on each dataset variant.
 - Record performance metrics:
   - Mean Average Precision (mAP)
   - Precision
@@ -81,7 +81,6 @@ This research aims to establish a **clear methodology for selecting the optimal 
 - Develop a reproducible pipeline to recommend the best YOLO version based on dataset diagnostics.
 
 ---
-
 ## Metrics
 
 ### 1. **Class Distribution Metrics**
@@ -90,9 +89,7 @@ This research aims to establish a **clear methodology for selecting the optimal 
 Measures the uniformity of the distribution of objects across classes.
 
 **Equation:**  
-\[
-H = -\sum_{i=1}^{n} p_i \log(p_i)
-\]  
+$$H = -\sum_{i=1}^{n} p_i \log(p_i)$$
 
 Where:  
 - \( H \): Entropy  
@@ -106,9 +103,7 @@ Where:
 Measures inequality in the class distribution.
 
 **Equation:**  
-\[
-G = 1 - \sum_{i=1}^{n} (p_i)^2
-\]  
+$$G = 1 - \sum_{i=1}^{n} (p_i)^2$$
 
 Where:  
 - \( G \): Gini Index  
@@ -121,9 +116,7 @@ Where:
 Measures the dispersion of object counts per class.
 
 **Equation:**  
-\[
-\sigma = \sqrt{\frac{\sum (x_i - \bar{x})^2}{N}}
-\]  
+$$\sigma = \sqrt{\frac{\sum (x_i - \bar{x})^2}{N}}$$
 
 Where:  
 - \( \sigma \): Standard Deviation  
@@ -137,9 +130,7 @@ Where:
 Measures the randomness of object placement across the image grid.
 
 **Equation:**  
-\[
-H = -\sum_{i=1}^{n} p_i \log(p_i)
-\]
+$$H = -\sum_{i=1}^{n} p_i \log(p_i)$$
 
 Where:  
 - \( p_i \): Proportion of objects in grid cell \( i \)  
@@ -152,9 +143,7 @@ Where:
 Measures how spread out object centers are across the image.
 
 **Equation:**  
-\[
-D = \sqrt{\sigma_x^2 + \sigma_y^2}
-\]
+$$D = \sqrt{\sigma_x^2 + \sigma_y^2}$$
 
 Where:  
 - \( \sigma_x \): Standard deviation of object center x-coordinates  
@@ -167,9 +156,7 @@ Where:
 Measures the average distance of object centers from the image center.
 
 **Equation:**  
-\[
-D_{cm} = \sqrt{(x_{cm} - x_{img})^2 + (y_{cm} - y_{img})^2}
-\]
+$$D_{cm} = \sqrt{(x_{cm} - x_{img})^2 + (y_{cm} - y_{img})^2}$$
 
 Where:  
 - \( x_{cm}, y_{cm} \): Center of mass of object centers  
@@ -183,5 +170,4 @@ Where:
 ## Current Tools
 
 1. **Dataset Conversion Tool:** Converts the original COCO dataset into YOLO TXT format.  
-2. **Dataset Health Evaluation Tool:** Analyzes dataset quality, including annotation completeness, image dimensions, object count distribution, and spatial distribution heatmaps.  
-
+2. **Dataset Health Evaluation Tool:** Analyzes dataset quality, including annotation completeness, image dimensions, object count distribution, and spatial distribution heatmaps.
