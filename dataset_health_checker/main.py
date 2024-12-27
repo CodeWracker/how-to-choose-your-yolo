@@ -9,10 +9,10 @@ enabling a comprehensive “health check” of the dataset.
 Health Metrics (Multidimensional)
 --------------------------------------------------------------------
 - **Class Distribution** (number of instances per class): saved as CSV
-- **Heatmap** (optional CSV, always saved as an image): shows where objects 
-  are concentrated in normalized image space
-- **Bounding Box Centers** (if needed in raw form): can be used for advanced 
-  spatial analyses or debugging
+- **Heatmaps**:
+  1. **Bounding Box Heatmap** (shows the spatial footprint of the entire box)
+  2. **Bounding Box Centers Heatmap** (shows only the centers of boxes)
+- **Bounding Box Centers** (raw list in memory, if needed for extended analysis)
 
 --------------------------------------------------------------------
 Health Parameters (Unidimensional)
@@ -36,7 +36,8 @@ These are compiled into `health_metrics.csv`. Examples include:
 --------------------------------------------------------------------
 Additional Outputs
 --------------------------------------------------------------------
-- Plots for class distribution and heatmaps (for quick visual inspection)
+- Bar chart plots for class distribution
+- Heatmaps for bounding boxes and bounding box centers
 - Logging information for each processing step (stored in `main.log`)
 
 --------------------------------------------------------------------
@@ -44,7 +45,6 @@ Usage Example:
     python analyze_dataset.py /path/to/yolo_dataset
 --------------------------------------------------------------------
 """
-
 
 import os
 import yaml as pyyaml
@@ -133,21 +133,15 @@ def compute_spatial_entropy(bboxes_centers: list, grid_size=10) -> float:
     grid = np.zeros((grid_size, grid_size), dtype=np.float32)
 
     for (xc, yc) in bboxes_centers:
-        # Determine which cell this center falls into
         gx = int(xc * grid_size)
         gy = int(yc * grid_size)
-
-        # Clip indices to avoid out-of-range
         gx = min(gx, grid_size - 1)
         gy = min(gy, grid_size - 1)
-
         grid[gy, gx] += 1.0
 
     total_boxes = len(bboxes_centers)
-    # Convert counts to probabilities
     grid_probs = grid.flatten() / (total_boxes + 1e-9)
 
-    # Compute entropy
     entropy = -sum([p * math.log(p + 1e-9) for p in grid_probs])
     return round(entropy, 6)
 
@@ -178,9 +172,6 @@ def compute_distance_from_center_of_mass(bboxes_centers: list) -> float:
     all objects, but here we consider the geometric image center by default.
 
     D_cm = mean( sqrt( (x_i - 0.5)^2 + (y_i - 0.5)^2 ) )
-
-    Returns:
-        float: Average distance of object centers from (0.5, 0.5).
     """
     if not bboxes_centers:
         return 0.0
@@ -201,7 +192,10 @@ def analyze_dataset(dataset_path: str):
     Main function that analyzes a YOLO-format dataset at `dataset_path`.
     - Generates raw CSV files with class distribution, etc.
     - Computes and saves unidimensional metrics in `health_metrics.csv`.
-    - Generates heatmaps and logs for manual inspection.
+    - Generates plots and logs for manual inspection:
+      * Class distribution bar charts
+      * Full bounding-box heatmap (1000x1000)
+      * Bounding-box center heatmap (1000x1000)
     """
 
     dataset_path = dataset_path.replace('\\', '/')
@@ -217,8 +211,8 @@ def analyze_dataset(dataset_path: str):
         logging.error(f'Error loading data.yaml: {e}')
         raise
 
-    class_names = yaml_data.get('names', [])    
-    # We assume only train/val splits here, but can be extended
+    class_names = yaml_data.get('names', [])
+    # We assume only train/val splits here, but can be extended if needed
     splits = {
         'train': os.path.join(dataset_path, 'train'),
         'val': os.path.join(dataset_path, 'val')
@@ -242,11 +236,13 @@ def analyze_dataset(dataset_path: str):
         empty_annotations = 0
         class_counter = Counter()
 
-        # We will store bounding box centers (x, y) in normalized coords
+        # We'll store bounding box centers (x, y) in normalized coords
         bbox_centers = []
 
-        # We'll also keep a 1000x1000 heatmap for visualization
-        heatmap_2d = np.zeros((1000, 1000), dtype=np.float32)
+        # 1000x1000 heatmap for the entire bounding box footprint
+        heatmap_bboxes = np.zeros((1000, 1000), dtype=np.float32)
+        # 1000x1000 heatmap specifically for bounding box centers
+        heatmap_centers = np.zeros((1000, 1000), dtype=np.float32)
 
         image_files = [
             f for f in os.listdir(images_path)
@@ -286,19 +282,26 @@ def analyze_dataset(dataset_path: str):
                         # Store normalized center for spatial metrics
                         bbox_centers.append((x_center, y_center))
 
-                        # Heatmap coordinates (scaled up to 1000x1000)
+                        # Convert center to integer for the center heatmap
+                        cx = int(x_center * 1000)
+                        cy = int(y_center * 1000)
+                        if 0 <= cx < 1000 and 0 <= cy < 1000:
+                            heatmap_centers[cy, cx] += 1.0
+
+                        # Convert bounding box footprint to integer coords
                         x_min = int((x_center - w / 2) * 1000)
                         x_max = int((x_center + w / 2) * 1000)
                         y_min = int((y_center - h / 2) * 1000)
                         y_max = int((y_center + h / 2) * 1000)
 
-                        # Clamping to avoid out-of-bound indices
+                        # Clamp to avoid out-of-bounds
                         x_min = max(x_min, 0)
                         x_max = min(x_max, 999)
                         y_min = max(y_min, 0)
                         y_max = min(y_max, 999)
 
-                        heatmap_2d[y_min:y_max+1, x_min:x_max+1] += 1.0
+                        # Increment bounding box footprint
+                        heatmap_bboxes[y_min:y_max+1, x_min:x_max+1] += 1.0
 
             except Exception as e:
                 logging.warning(f'Error processing file {img_file}: {e}')
@@ -310,7 +313,7 @@ def analyze_dataset(dataset_path: str):
             'images_without_annotation': images_without_annotation,
             'empty_annotations': empty_annotations,
             'class_counts': dict(class_counter),
-            'bbox_centers': bbox_centers  # We'll use this to compute spatial metrics
+            'bbox_centers': bbox_centers  # used to compute spatial metrics
         }
 
         logging.info(f'{split_name} - Images: {total_images}')
@@ -330,32 +333,46 @@ def analyze_dataset(dataset_path: str):
         logging.info(f'Saved class distribution CSV for {split_name} -> {csv_class_dist}')
 
         # -------------------------------------------------------
-        # Save heatmap as PNG
+        # Plot and save class distribution as PNG
+        # -------------------------------------------------------
+        class_ids = sorted(class_counter.keys())
+        class_counts = [class_counter[cid] for cid in class_ids]
+        plt.figure(figsize=(8, 6))
+        plt.bar(class_ids, class_counts, color='blue')
+        plt.xlabel('Class ID')
+        plt.ylabel('Count')
+        plt.title(f'Class Distribution - {split_name}')
+        plt.xticks(class_ids)  # might be cluttered if many classes
+        dist_plot_file = os.path.join(health_folder, f'class_distribution_{split_name}.png')
+        plt.savefig(dist_plot_file)
+        plt.close()
+        logging.info(f'Saved class distribution plot for {split_name} -> {dist_plot_file}')
+
+        # -------------------------------------------------------
+        # Save bounding-box footprint heatmap as PNG
         # -------------------------------------------------------
         plt.figure(figsize=(6, 6))
-        plt.imshow(heatmap_2d, cmap='hot', interpolation='nearest', origin='lower')
-        plt.title(f'Annotation Heatmap - {split_name}')
+        plt.imshow(heatmap_bboxes, cmap='hot', interpolation='nearest', origin='lower')
+        plt.title(f'Annotation BBox Heatmap - {split_name}')
         plt.colorbar(label='Number of bounding boxes')
-        heatmap_file = os.path.join(health_folder, f'heatmap_{split_name}.png')
+        heatmap_file = os.path.join(health_folder, f'heatmap_bboxes_{split_name}.png')
         plt.savefig(heatmap_file)
         plt.close()
-        logging.info(f'Saved heatmap image for {split_name} -> {heatmap_file}')
+        logging.info(f'Saved bounding-box footprint heatmap for {split_name} -> {heatmap_file}')
 
-    # -------------------------------------------------------
-    # Save raw results in YAML
-    # -------------------------------------------------------
-    raw_results_yaml = os.path.join(health_folder, 'results_raw.yaml')
-    import yaml  # local import again if needed
-    with open(raw_results_yaml, 'w', encoding='utf-8') as f_y:
-        # We don't want to store large arrays in YAML (like bbox_centers) 
-        # because it might be too big. So let's remove 'bbox_centers' before dumping.
-        temp = {}
-        for k, v in results.items():
-            temp[k] = dict(v)
-            temp[k].pop('bbox_centers', None)  # remove centers to keep file smaller
+        # -------------------------------------------------------
+        # Save bounding-box center heatmap as PNG
+        # -------------------------------------------------------
+        plt.figure(figsize=(6, 6))
+        plt.imshow(heatmap_centers, cmap='hot', interpolation='nearest', origin='lower')
+        plt.title(f'Annotation Centers Heatmap - {split_name}')
+        plt.colorbar(label='Number of bounding box centers')
+        center_heatmap_file = os.path.join(health_folder, f'heatmap_centers_{split_name}.png')
+        plt.savefig(center_heatmap_file)
+        plt.close()
+        logging.info(f'Saved bounding-box center heatmap for {split_name} -> {center_heatmap_file}')
 
-        pyyaml.dump(temp, f_y)
-    logging.info(f'Saved raw results in {raw_results_yaml}')
+
 
     # -------------------------------------------------------
     # Compute unidimensional metrics and save in health_metrics.csv
@@ -363,7 +380,6 @@ def analyze_dataset(dataset_path: str):
     metrics_csv_path = os.path.join(health_folder, 'health_metrics.csv')
     with open(metrics_csv_path, 'w', newline='', encoding='utf-8') as f_csv:
         writer = csv.writer(f_csv)
-        # Header columns
         writer.writerow([
             'split',
             'total_images',
@@ -380,19 +396,19 @@ def analyze_dataset(dataset_path: str):
         ])
 
         for split_name, info in results.items():
-            class_counts = info['class_counts']
-            bbox_centers = info['bbox_centers']
+            c_counts = info['class_counts']
+            centers = info['bbox_centers']
 
             # Class distribution metrics
-            effective_num_classes = compute_num_classes(class_counts)
-            gini_index = compute_gini_index(class_counts)
-            entropy_class_dist = compute_entropy_class_distribution(class_counts)
-            std_class = compute_std_class_counts(class_counts)
+            effective_num_classes = compute_num_classes(c_counts)
+            gini_index = compute_gini_index(c_counts)
+            entropy_class_dist = compute_entropy_class_distribution(c_counts)
+            std_class = compute_std_class_counts(c_counts)
 
             # Spatial metrics
-            spatial_entropy = compute_spatial_entropy(bbox_centers, grid_size=10)
-            std_centers = compute_std_object_centers(bbox_centers)
-            distance_cm = compute_distance_from_center_of_mass(bbox_centers)
+            spatial_entropy_val = compute_spatial_entropy(centers, grid_size=10)
+            std_centers = compute_std_object_centers(centers)
+            distance_cm = compute_distance_from_center_of_mass(centers)
 
             writer.writerow([
                 split_name,
@@ -404,7 +420,7 @@ def analyze_dataset(dataset_path: str):
                 gini_index,
                 entropy_class_dist,
                 std_class,
-                spatial_entropy,
+                spatial_entropy_val,
                 std_centers,
                 distance_cm
             ])
@@ -412,6 +428,7 @@ def analyze_dataset(dataset_path: str):
     logging.info(f'Saved unidimensional metrics in {metrics_csv_path}')
     logging.info('Analysis completed successfully.')
     print('✅ Analysis completed. Results are stored in the health folder.')
+
 
 # -------------------------------------------------------
 # Entry Point
