@@ -113,24 +113,26 @@ After collecting performance metrics for each dataset variant, we explore **stat
 Finally, we use these correlation insights to propose **a reproducible pipeline** that suggests which YOLO version is optimal given a dataset’s numeric profile. For example, the framework might recommend YOLOv9 for datasets with high entropy in class distribution, or YOLOv3 for datasets with fewer classes and sparse objects.
 
 ---
-
 ## Metrics
 
 Below we list the main “dataset health” metrics we plan to measure. Each is **numeric** and has a clear interpretation, making them suitable for statistical analyses. Our overarching principle is: **if it cannot be expressed numerically, we cannot reliably correlate it with YOLO performance**.
 
-### 1. Class Distribution Metrics
+---
+
+### 1. **Class Distribution Metrics**
 
 #### 1.1. **Entropy of Class Distribution**
 
 **Reason:**  
 Entropy measures the level of **uniformity vs. skewness** in the distribution of objects across classes. A high entropy indicates a more uniform distribution, whereas a low entropy indicates that some classes dominate.
 
-**Equation (Shannon Entropy):**  
+**Equation (Shannon Entropy):**
+
 $$
 H = -\sum_{i=1}^{n} p_i \log(p_i)
 $$
 
-Where:
+Where:  
 - \(H\) is the entropy.  
 - \(p_i\) is the proportion of class \(i\).  
 - \(n\) is the total number of classes.  
@@ -139,17 +141,20 @@ Where:
 - **High \(H\):** Balanced class distribution (no single class is dominant).  
 - **Low \(H\):** Distribution is skewed toward a few classes.
 
+---
+
 #### 1.2. **Gini Index**
 
 **Reason:**  
 Often used in economics to measure inequality, the Gini Index can quantify **class imbalance** in a dataset.
 
 **Equation:**  
+
 $$
 G = 1 - \sum_{i=1}^{n} (p_i)^2
 $$
 
-Where:
+Where:  
 - \(G\) is the Gini Index.  
 - \(p_i\) is the proportion of class \(i\).  
 
@@ -160,17 +165,20 @@ Where:
 **Alternative Approaches:**  
 Some researchers use different imbalance metrics like **Coefficient of Variation** or **Imbalance Ratio**. For instance, the Coefficient of Variation of class frequencies can also capture imbalance, but the Gini Index is more standard for capturing distribution inequality.
 
+---
+
 #### 1.3. **Standard Deviation of Instances per Class**
 
 **Reason:**  
 Standard deviation tells us **how dispersed** the class frequencies are.
 
 **Equation:**  
+
 $$
 \sigma = \sqrt{\frac{\sum (x_i - \bar{x})^2}{N}}
 $$
 
-Where:
+Where:  
 - \(\sigma\) is the standard deviation.  
 - \(x_i\) is the number of instances in class \(i\).  
 - \(\bar{x}\) is the mean number of instances across all classes.  
@@ -182,9 +190,11 @@ Where:
 
 ---
 
-### 2. Spatial Distribution Metrics
+### 2. **Spatial Distribution Metrics**
 
 While “class distribution” focuses on **how many** instances each class has, “spatial distribution” focuses on **where** objects appear in each image. These metrics help clarify whether objects are **clustered** in certain regions or **spread out** evenly.
+
+---
 
 #### 2.1. **Entropy of Object Locations**
 
@@ -195,10 +205,14 @@ We can measure how uniformly bounding boxes occupy the image. If objects are mos
 1. Divide each image into a grid (e.g., 10×10).  
 2. Count how many bounding boxes (or bounding box centers) fall into each grid cell.  
 3. Compute entropy over these proportions:  
-   $$
-   H = -\sum_{i=1}^{n} p_i \log(p_i)
-   $$
-   where \(p_i\) is the proportion of objects in grid cell \(i\), and \(n\) is the total number of cells.
+
+$$
+H = -\sum_{i=1}^{n} p_i \log(p_i)
+$$
+
+Where:  
+- \(p_i\) is the proportion of objects in grid cell \(i\).  
+- \(n\) is the total number of cells.  
 
 **Interpretation:**  
 - **High entropy:** Objects spread out across the image.  
@@ -207,17 +221,20 @@ We can measure how uniformly bounding boxes occupy the image. If objects are mos
 **Alternative Approach:**  
 Instead of a fixed 10×10 grid, we could use **adaptive binning** based on image size or average bounding box size. This might give a more stable measure across different resolutions.
 
+---
+
 #### 2.2. **Standard Deviation of Object Centers**
 
 **Reason:**  
 Indicates how widely object centers are dispersed. If \(\sigma_x\) and \(\sigma_y\) are small, objects cluster near a common point; if large, they are spread out.
 
-**Equation (combined metric):**  
+**Equation (combined metric):**
+
 $$
 D = \sqrt{(\sigma_x)^2 + (\sigma_y)^2}
 $$
 
-Where:
+Where:  
 - \(\sigma_x\) is the standard deviation of bounding box center \(x\)-coordinates.  
 - \(\sigma_y\) is the standard deviation of bounding box center \(y\)-coordinates.  
 
@@ -225,17 +242,20 @@ Where:
 - **Low \(D\):** Clustered distribution in image space.  
 - **High \(D\):** More uniform or widespread distribution across the image.
 
+---
+
 #### 2.3. **Distance from Center of Mass**
 
 **Reason:**  
 Measures how far objects (on average) are from the image’s center, effectively detecting if there is a “center bias.”
 
 **Equation:**  
+
 $$
 D_{cm} = \sqrt{(x_{cm} - x_{img})^2 + (y_{cm} - y_{img})^2}
 $$
 
-Where:
+Where:  
 - \(x_{cm}, y_{cm}\) is the overall center of mass (mean of all object centers).  
 - \(x_{img}, y_{img}\) is the geometric center of the image.
 
@@ -258,3 +278,4 @@ In some cases, we might measure the **distribution** of distances from the cente
    - Examines **annotation completeness** (missing/null annotations).  
    - Assesses **spatial distribution** (object center plots, heatmaps).  
    - Outputs visualizations (histograms, heatmaps) and numeric values for each metric.
+
