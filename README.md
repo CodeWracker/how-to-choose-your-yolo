@@ -45,24 +45,17 @@ This research aims to establish a **clear methodology for selecting the optimal 
 
 **Example Outputs from Dataset Health Checker:**
 
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-    <div>
-        #### Class Distribution (Training Dataset)
-        <img src="dataset_health_checker/results/class_distribution_train.png" alt="Class Distribution Train" width="400px">
-    </div>
-    <div>
-        #### Class Distribution (Validation Dataset)
-        <img src="dataset_health_checker/results/class_distribution_val.png" alt="Class Distribution Val" width="400px">
-    </div>
-    <div>
-        #### Heatmap of Object Annotations (Training Dataset)
-        <img src="dataset_health_checker/results/heatmap_train.png" alt="Heatmap Train" width="400px">
-    </div>
-    <div>
-        #### Heatmap of Object Annotations (Validation Dataset)
-        <img src="dataset_health_checker/results/heatmap_val.png" alt="Heatmap Val" width="400px">
-    </div>
-</div>
+#### Class Distribution (Training Dataset)
+![Class Distribution Train](dataset_health_checker/results/class_distribution_train.png)
+
+#### Class Distribution (Validation Dataset)
+![Class Distribution Val](dataset_health_checker/results/class_distribution_val.png)
+
+#### Heatmap of Object Annotations (Training Dataset)
+![Heatmap Train](dataset_health_checker/results/heatmap_train.png)
+
+#### Heatmap of Object Annotations (Validation Dataset)
+![Heatmap Val](dataset_health_checker/results/heatmap_val.png)
 
 ### 2. **Dataset Variants Creation**
 - Generate variants of the COCO dataset by modifying:
