@@ -2,7 +2,6 @@
 
 This repository presents an ongoing research project that aims to **establish a clear methodology for selecting the optimal YOLO model based on dataset characteristics**. Unlike the typical approach of arbitrarily choosing a few YOLO versions (e.g., v3, v5, v7, v9), training them on a large dataset such as COCO, and comparing results, our goal is to measure specific attributes of the dataset—referred to here as “dataset health metrics”—*before* we decide which YOLO version is likely to perform best. This method is designed to save time, computational resources, and increase the scientific rigor of our work.
 
----
 
 ## Motivation
 
@@ -15,7 +14,6 @@ This repository presents an ongoing research project that aims to **establish a 
 3. **Dataset Variability**  
    Real-world datasets can differ significantly: number of classes, distribution of instances per class, spatial distribution of objects, image resolutions, etc. A model that excels on a dataset with uniform class distribution might underperform on a dataset with skewed or clustered distributions. We aim to quantify these effects.
 
----
 
 ## Objectives
 
@@ -37,7 +35,6 @@ This repository presents an ongoing research project that aims to **establish a 
    - Correlate dataset metrics with YOLO performance.  
    - Propose guidelines for choosing the YOLO version that is most likely to perform well given the dataset’s measurable characteristics—*before* starting the training process.
 
----
 
 ## Methodology
 
@@ -112,12 +109,10 @@ After collecting performance metrics for each dataset variant, we explore **stat
 
 Finally, we use these correlation insights to propose **a reproducible pipeline** that suggests which YOLO version is optimal given a dataset’s numeric profile. For example, the framework might recommend YOLOv9 for datasets with high entropy in class distribution, or YOLOv3 for datasets with fewer classes and sparse objects.
 
----
 ## Metrics
 
 Below we list the main “dataset health” metrics we plan to measure. Each is **numeric** and has a clear interpretation, making them suitable for statistical analyses. Our overarching principle is: **if it cannot be expressed numerically, we cannot reliably correlate it with YOLO performance**.
 
----
 
 ### 1. **Class Distribution Metrics**
 
@@ -141,7 +136,6 @@ Where:
 - **High \(H\):** Balanced class distribution (no single class is dominant).  
 - **Low \(H\):** Distribution is skewed toward a few classes.
 
----
 
 #### 1.2. **Gini Index**
 
@@ -165,7 +159,6 @@ Where:
 **Alternative Approaches:**  
 Some researchers use different imbalance metrics like **Coefficient of Variation** or **Imbalance Ratio**. For instance, the Coefficient of Variation of class frequencies can also capture imbalance, but the Gini Index is more standard for capturing distribution inequality.
 
----
 
 #### 1.3. **Standard Deviation of Instances per Class**
 
@@ -188,13 +181,11 @@ Where:
 - **Low \(\sigma\):** Class frequencies are nearly the same (balanced).  
 - **High \(\sigma\):** Some classes have far more instances than others (skewed).
 
----
 
 ### 2. **Spatial Distribution Metrics**
 
 While “class distribution” focuses on **how many** instances each class has, “spatial distribution” focuses on **where** objects appear in each image. These metrics help clarify whether objects are **clustered** in certain regions or **spread out** evenly.
 
----
 
 #### 2.1. **Entropy of Object Locations**
 
@@ -221,7 +212,6 @@ Where:
 **Alternative Approach:**  
 Instead of a fixed 10×10 grid, we could use **adaptive binning** based on image size or average bounding box size. This might give a more stable measure across different resolutions.
 
----
 
 #### 2.2. **Standard Deviation of Object Centers**
 
@@ -242,7 +232,6 @@ Where:
 - **Low \(D\):** Clustered distribution in image space.  
 - **High \(D\):** More uniform or widespread distribution across the image.
 
----
 
 #### 2.3. **Distance from Center of Mass**
 
@@ -266,7 +255,6 @@ Where:
 **Alternative Approach:**  
 In some cases, we might measure the **distribution** of distances from the center, not just the mean. This could provide additional detail on how objects are spread around the center.
 
----
 
 ## Current Tools
 
