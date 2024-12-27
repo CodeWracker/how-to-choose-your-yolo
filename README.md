@@ -44,18 +44,29 @@ This research aims to establish a **clear methodology for selecting the optimal 
   - Heatmap of annotation locations
 
 **Example Outputs from Dataset Health Checker:**
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
 
-#### Class Distribution (Training Dataset)
-![Class Distribution Train](dataset_health_checker/results/class_distribution_train.png)
+<div style="width: 500px;">
+<h4>Class Distribution (Training Dataset)</h4>
+<img src="dataset_health_checker/results/class_distribution_train.png" alt="Class Distribution Train">
+</div>
 
-#### Class Distribution (Validation Dataset)
-![Class Distribution Val](dataset_health_checker/results/class_distribution_val.png)
+<div style="width: 500px;">
+<h4>Class Distribution (Validation Dataset)</h4>
+<img src="dataset_health_checker/results/class_distribution_val.png" alt="Class Distribution Val">
+</div>
 
-#### Heatmap of Object Annotations (Training Dataset)
-![Heatmap Train](dataset_health_checker/results/heatmap_train.png)
+<div style="width: 500px;">
+<h4>Heatmap of Object Annotations (Training Dataset)</h4>
+<img src="dataset_health_checker/results/heatmap_train.png" alt="Heatmap Train">
+</div>
 
-#### Heatmap of Object Annotations (Validation Dataset)
-![Heatmap Val](dataset_health_checker/results/heatmap_val.png)
+<div style="width: 500px;">
+<h4>Heatmap of Object Annotations (Validation Dataset)</h4>
+<img src="dataset_health_checker/results/heatmap_val.png" alt="Heatmap Val">
+</div>
+
+</div>
 
 ### 2. **Dataset Variants Creation**
 - Generate variants of the COCO dataset by modifying:
